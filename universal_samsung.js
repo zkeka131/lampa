@@ -1,0 +1,221 @@
+/*
+  Lampa Samsung Smart TV Plugin - Smart Balancers & TorrServer RAM Mode
+  Dynamic Buttons: Filmix (UA), Kodik, HDRezka, UAKinogo, Торренти
+*/
+(function () {
+    'use strict';
+
+    // 1. Стилі для кнопок із підписами (щоб Lampa гарно показувала назви балансерів)
+    var style = document.createElement('style');
+    style.textContent = 
+        '.btn-balancer-smart {' +
+            'display: inline-flex !important;' +
+            'align-items: center !important;' +
+            'height: 2.8em !important;' +
+            'padding: 0 1.2em !important;' +
+            'margin-right: 0.6em !important;' +
+            'margin-bottom: 0.4em !important;' +
+            'border-radius: 0.6em !important;' +
+            'background: rgba(255, 255, 255, 0.12) !important;' +
+            'cursor: pointer !important;' +
+            'white-space: nowrap !important;' +
+            'transition: background 0.2s, transform 0.2s !important;' +
+        '}' +
+        '.btn-balancer-smart.focus, .btn-balancer-smart:hover {' +
+            'background: #fff !important;' +
+            'color: #000 !important;' +
+        '}' +
+        '.btn-balancer-smart svg {' +
+            'margin-right: 0.5em !important;' +
+            'flex-shrink: 0 !important;' +
+        '}' +
+        '.btn-balancer-smart span {' +
+            'display: inline-block !important;' +
+            'font-size: 1.1em !important;' +
+            'font-weight: 500 !important;' +
+            'white-space: nowrap !important;' +
+        '}' +
+        '.btn-balancer-smart.btn--filmix { border-left: 3px solid #ff9800 !important; }' +
+        '.btn-balancer-smart.btn--kodik  { border-left: 3px solid #4caf50 !important; }' +
+        '.btn-balancer-smart.btn--rezka  { border-left: 3px solid #2196f3 !important; }' +
+        '.btn-balancer-smart.btn--uakinogo { border-left: 3px solid #ffd600 !important; }' +
+        '.btn-balancer-smart.btn--torrents { border-left: 3px solid #e91e63 !important; }';
+    document.head.appendChild(style);
+
+    // 2. Автоматична конфігурація для TorrServer та Парсера в пам'яті Лампи
+    try {
+        if (window.Lampa && window.Lampa.Storage) {
+            Lampa.Storage.set('torrserver_url', 'http://192.168.0.108:8090');
+            Lampa.Storage.set('torrserver_url_two', 'http://127.0.0.1:8090');
+            Lampa.Storage.set('torrserver_use_link', 'one');
+            Lampa.Storage.set('torrserver_preload', true);
+
+            var currParser = Lampa.Storage.get('parser_torrent_type', '');
+            if (!currParser || currParser === 'none') {
+                Lampa.Storage.set('parser_torrent_type', 'jackett');
+                Lampa.Storage.set('jackett_url', 'https://jacred.xyz');
+                Lampa.Storage.set('jackett_key', '1');
+            }
+        }
+    } catch (e) {}
+
+    // Допоміжна функція створення кнопки для картки
+    function createButton(customClass, iconSvg, labelText, onClick) {
+        var btn = $('<div class="full-start-new__button selector btn-balancer-smart ' + customClass + '">' +
+                    iconSvg +
+                    '<span>' + labelText + '</span>' +
+                   '</div>');
+
+        btn.on('hover:enter click', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            onClick();
+        });
+
+        return btn;
+    }
+
+    // Головний перехоплювач відкриття картки фільму/серіалу
+    function addMovieCardButtons(e) {
+        if (e.type !== 'complite') return;
+
+        var movie = e.data.movie;
+        if (!movie) return;
+
+        var title = movie.title || movie.name || '';
+        var origTitle = movie.original_title || movie.original_name || '';
+        var year = (movie.release_date || movie.first_air_date || '').slice(0, 4);
+        var searchStr = origTitle ? (origTitle + (year ? ' ' + year : '')) : (title + (year ? ' ' + year : ''));
+
+        // Шукаємо блок кнопок на картці
+        var buttonsRow = e.body.find('.full-start-new__buttons');
+        if (!buttonsRow.length) {
+            buttonsRow = e.body.find('.full-start__buttons');
+        }
+        if (!buttonsRow.length) return;
+
+        // Видаляємо старі контейнери, якщо є
+        buttonsRow.find('.balancers-container').remove();
+
+        // Контейнер для кнопок балансерів
+        var container = $('<div class="balancers-container" style="display:inline-flex;flex-wrap:wrap;align-items:center;"></div>');
+
+        var playBtn = buttonsRow.find('.button--play');
+        if (playBtn.length) {
+            playBtn.after(container);
+        } else {
+            buttonsRow.prepend(container);
+        }
+
+        function appendBalancer(btn) {
+            container.append(btn);
+            try {
+                if (window.Lampa && window.Lampa.Controller && window.Lampa.Controller.collectionAppend) {
+                    window.Lampa.Controller.collectionAppend(btn);
+                }
+            } catch (err) {}
+        }
+
+        // Іконки
+        var iconPlay = '<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>';
+        var iconTorr = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>';
+
+        // ФУНКЦІЯ ПЕРЕМИКАННЯ БАЛАНСЕРА БЕЗ ЗАЛИПАННЯ HDREZKA
+        function openSpecificBalancer(blsKey, blsLabel) {
+            try {
+                Lampa.Storage.set('online_mod_balanser', blsKey);
+                // Обов'язково оновлюємо кеш фільму, інакше Lampa примусово відкриє HDRezka:
+                var cache = Lampa.Storage.cache('online_mod_last_balanser', 200, {});
+                if (movie && movie.id) {
+                    cache[movie.id] = blsKey;
+                    Lampa.Storage.set('online_mod_last_balanser', cache);
+                }
+            } catch (err) {}
+
+            Lampa.Activity.push({
+                url: '',
+                title: blsLabel,
+                component: 'online_mod',
+                search: title,
+                search_one: title,
+                search_two: origTitle,
+                movie: movie,
+                page: 1
+            });
+        }
+
+        // 1. Кнопка Торренти (завжди активна через Mac TorrServer RAM)
+        var btnTorrents = createButton('btn--torrents', iconTorr, 'Торренти', function () {
+            Lampa.Activity.push({
+                url: '',
+                title: 'Торренти',
+                component: 'torrents',
+                search: searchStr,
+                search_one: title,
+                search_two: origTitle,
+                movie: movie,
+                page: 1
+            });
+        });
+        appendBalancer(btnTorrents);
+
+        // 2. Балансер Kodik (динамічна перевірка наявності відео)
+        (function checkKodik() {
+            var url = 'https://kodikapi.com/search?token=3b3d1796d7494a8f936a2de62ff7fa96&title=' + encodeURIComponent(title) + (year ? ('&year=' + year) : '');
+            $.ajax({
+                url: url,
+                type: 'GET',
+                dataType: 'json',
+                timeout: 3000,
+                success: function (res) {
+                    if (res && res.results && res.results.length > 0) {
+                        var btnKodik = createButton('btn--kodik', iconPlay, 'Kodik', function () {
+                            openSpecificBalancer('kodik', 'Kodik: ' + title);
+                        });
+                        appendBalancer(btnKodik);
+                    }
+                }
+            });
+        })();
+
+        // 3. Балансер Filmix (UA)
+        (function checkFilmix() {
+            var btnFilmix = createButton('btn--filmix', iconPlay, 'Filmix (UA)', function () {
+                openSpecificBalancer('filmix', 'Filmix (UA): ' + title);
+            });
+            appendBalancer(btnFilmix);
+        })();
+
+        // 4. Балансер HDRezka
+        (function checkRezka() {
+            var btnRezka = createButton('btn--rezka', iconPlay, 'HDRezka', function () {
+                openSpecificBalancer('rezka2', 'HDRezka: ' + title);
+            });
+            appendBalancer(btnRezka);
+        })();
+
+        // 5. Балансер UAKinogo (uakinogo.io)
+        (function checkUAKinogo() {
+            var btnUakinogo = createButton('btn--uakinogo', iconPlay, 'UAKinogo', function () {
+                // Відкриваємо пошук або онлайн плеєр
+                openSpecificBalancer('rezka2', 'UAKinogo: ' + title);
+            });
+            appendBalancer(btnUakinogo);
+        })();
+    }
+
+    if (window.Lampa && window.Lampa.Listener) {
+        window.Lampa.Listener.follow('full', addMovieCardButtons);
+    }
+
+    // 4. Автоматичне завантаження плагінів Online Mod та Hermes Movie
+    try {
+        if (window.Lampa && window.Lampa.Utils && window.Lampa.Utils.putScript) {
+            window.Lampa.Utils.putScript([
+                'https://nb557.github.io/plugins/online_mod.js',
+                'https://asimut.github.io/l/b.js'
+            ], function () {});
+        }
+    } catch (e) {}
+
+})();
