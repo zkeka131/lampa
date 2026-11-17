@@ -73,12 +73,8 @@
             Lampa.Storage.set('torrserver_use_link', 'one');
             Lampa.Storage.set('torrserver_preload', true);
 
-            var currParser = Lampa.Storage.get('parser_torrent_type', '');
-            if (!currParser || currParser === 'none') {
-                Lampa.Storage.set('parser_torrent_type', 'jackett');
-                Lampa.Storage.set('jackett_url', 'https://jacred.xyz');
-                Lampa.Storage.set('jackett_key', '1');
-            }
+            Lampa.Storage.set('parser_use', true);
+            Lampa.Storage.set('parser_torrent_type', 'torrserver');
         }
     } catch (e) {}
 
