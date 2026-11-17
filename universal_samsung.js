@@ -74,7 +74,7 @@
             Lampa.Storage.set('torrserver_preload', true);
             Lampa.Storage.set('parser_use', true);
             Lampa.Storage.set('parser_torrent_type', 'jackett');
-            Lampa.Storage.set('jackett_url', 'jac.red');
+            Lampa.Storage.set('jackett_url', 'jacred.su');
         }
     } catch (e) {}
 
