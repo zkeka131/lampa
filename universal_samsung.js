@@ -8,17 +8,28 @@
     // 1. Стилі для кнопок із підписами (щоб Lampa гарно показувала назви балансерів)
     var style = document.createElement('style');
     style.textContent = 
+        '.balancers-container {' +
+            'display: inline-flex !important;' +
+            'flex-wrap: wrap !important;' +
+            'align-items: center !important;' +
+            'gap: 0.6em !important;' +
+            'margin-left: 0.6em !important;' +
+        '}' +
         '.btn-balancer-smart {' +
             'display: inline-flex !important;' +
             'align-items: center !important;' +
-            'height: 2.8em !important;' +
-            'padding: 0 1.2em !important;' +
-            'margin-right: 0.6em !important;' +
-            'margin-bottom: 0.4em !important;' +
+            'justify-content: flex-start !important;' +
+            'height: 2.6em !important;' +
+            'padding: 0 1em !important;' +
+            'margin: 0.2em 0.4em 0.2em 0 !important;' +
             'border-radius: 0.6em !important;' +
             'background: rgba(255, 255, 255, 0.12) !important;' +
             'cursor: pointer !important;' +
             'white-space: nowrap !important;' +
+            'box-sizing: border-box !important;' +
+            'vertical-align: middle !important;' +
+            'color: #fff !important;' +
+            'position: relative !important;' +
             'transition: background 0.2s, transform 0.2s !important;' +
         '}' +
         '.btn-balancer-smart.focus, .btn-balancer-smart:hover {' +
@@ -26,14 +37,26 @@
             'color: #000 !important;' +
         '}' +
         '.btn-balancer-smart svg {' +
+            'width: 1.3em !important;' +
+            'min-width: 1.3em !important;' +
+            'max-width: 1.3em !important;' +
+            'height: 1.3em !important;' +
+            'min-height: 1.3em !important;' +
+            'max-height: 1.3em !important;' +
             'margin-right: 0.5em !important;' +
+            'margin-left: 0 !important;' +
             'flex-shrink: 0 !important;' +
+            'display: block !important;' +
         '}' +
         '.btn-balancer-smart span {' +
             'display: inline-block !important;' +
-            'font-size: 1.1em !important;' +
+            'font-size: 1.05em !important;' +
             'font-weight: 500 !important;' +
+            'line-height: 1 !important;' +
             'white-space: nowrap !important;' +
+            'color: inherit !important;' +
+            'margin: 0 !important;' +
+            'padding: 0 !important;' +
         '}' +
         '.btn-balancer-smart.btn--filmix { border-left: 3px solid #ff9800 !important; }' +
         '.btn-balancer-smart.btn--kodik  { border-left: 3px solid #4caf50 !important; }' +
