@@ -7,7 +7,7 @@
 
     // 1. Стилі для кнопок із підписами (щоб Lampa гарно показувала назви балансерів)
     var style = document.createElement('style');
-    style.textContent = 
+    style.textContent =
         '.balancers-container {' +
             'display: inline-flex !important;' +
             'flex-wrap: wrap !important;' +
@@ -59,8 +59,8 @@
             'padding: 0 !important;' +
         '}' +
         '.btn-balancer-smart.btn--filmix { border-left: 3px solid #ff9800 !important; }' +
-        '.btn-balancer-smart.btn--kodik  { border-left: 3px solid #4caf50 !important; }' +
-        '.btn-balancer-smart.btn--rezka  { border-left: 3px solid #2196f3 !important; }' +
+        '.btn-balancer-smart.btn--kodik { border-left: 3px solid #4caf50 !important; }' +
+        '.btn-balancer-smart.btn--rezka { border-left: 3px solid #2196f3 !important; }' +
         '.btn-balancer-smart.btn--uakinogo { border-left: 3px solid #ffd600 !important; }' +
         '.btn-balancer-smart.btn--torrents { border-left: 3px solid #e91e63 !important; }';
     document.head.appendChild(style);
@@ -72,18 +72,18 @@
             Lampa.Storage.set('torrserver_url_two', 'http://127.0.0.1:8090');
             Lampa.Storage.set('torrserver_use_link', 'one');
             Lampa.Storage.set('torrserver_preload', true);
-
             Lampa.Storage.set('parser_use', true);
-            Lampa.Storage.set('parser_torrent_type', 'torrserver');
+            Lampa.Storage.set('parser_torrent_type', 'jackett');
+            Lampa.Storage.set('jackett_url', 'https://jac.red');
         }
     } catch (e) {}
 
     // Допоміжна функція створення кнопки для картки
     function createButton(customClass, iconSvg, labelText, onClick) {
         var btn = $('<div class="full-start-new__button selector btn-balancer-smart ' + customClass + '">' +
-                    iconSvg +
-                    '<span>' + labelText + '</span>' +
-                   '</div>');
+            iconSvg +
+            '<span>' + labelText + '</span>' +
+        '</div>');
 
         btn.on('hover:enter click', function (e) {
             e.preventDefault();
@@ -97,14 +97,11 @@
     // Головний перехоплювач відкриття картки фільму/серіалу
     function addMovieCardButtons(e) {
         if (e.type !== 'complite') return;
-
         var movie = e.data.movie;
         if (!movie) return;
 
         var title = movie.title || movie.name || '';
         var origTitle = movie.original_title || movie.original_name || '';
-        var year = (movie.release_date || movie.first_air_date || '').slice(0, 4);
-        var searchStr = origTitle ? (origTitle + (year ? ' ' + year : '')) : (title + (year ? ' ' + year : ''));
 
         // Шукаємо блок кнопок на картці
         var buttonsRow = e.body.find('.full-start-new__buttons');
@@ -118,7 +115,6 @@
 
         // Контейнер для кнопок балансерів
         var container = $('<div class="balancers-container" style="display:inline-flex;flex-wrap:wrap;align-items:center;"></div>');
-
         var playBtn = buttonsRow.find('.button--play');
         if (playBtn.length) {
             playBtn.after(container);
@@ -163,15 +159,12 @@
             });
         }
 
-        // 1. Кнопка Торренти (завжди активна через Mac TorrServer RAM)
+        // 1. Кнопка Торренти (Jackett / PubTorr)
         var btnTorrents = createButton('btn--torrents', iconTorr, 'Торренти', function () {
             Lampa.Activity.push({
                 url: '',
-                title: 'Торренти',
+                title: 'Торренты',
                 component: 'torrents',
-                search: searchStr,
-                search_one: title,
-                search_two: origTitle,
                 movie: movie,
                 page: 1
             });
@@ -180,6 +173,7 @@
 
         // 2. Балансер Kodik (динамічна перевірка наявності відео)
         (function checkKodik() {
+            var year = (movie.release_date || movie.first_air_date || '').slice(0, 4);
             var url = 'https://kodikapi.com/search?token=3b3d1796d7494a8f936a2de62ff7fa96&title=' + encodeURIComponent(title) + (year ? ('&year=' + year) : '');
             $.ajax({
                 url: url,
@@ -227,14 +221,14 @@
         window.Lampa.Listener.follow('full', addMovieCardButtons);
     }
 
-    // 4. Автоматичне завантаження плагінів Online Mod та Hermes Movie
+    // 4. Автоматичне завантаження плагінів Online Mod, PubTorr та Hermes Movie
     try {
         if (window.Lampa && window.Lampa.Utils && window.Lampa.Utils.putScript) {
             window.Lampa.Utils.putScript([
                 'https://nb557.github.io/plugins/online_mod.js',
+                'https://lampame.github.io/main/pubtorr.js',
                 'https://asimut.github.io/l/b.js'
             ], function () {});
         }
     } catch (e) {}
-
 })();
